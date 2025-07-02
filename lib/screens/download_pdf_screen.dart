@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-// import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 import '../models/pdf_file_model.dart';
 import '../models/download_manager.dart';
 import 'downloaded_reports_screen.dart';
@@ -22,8 +24,17 @@ class _DownloadPdfScreenState extends State<DownloadPdfScreen> {
   ];
 
   Future<void> _viewPdf(PdfFileModel pdf) async {
-    final url = Uri.base.resolve(pdf.assetPath).toString();
-    await launchUrl(Uri.parse(url));
+    try {
+      final byteData = await rootBundle.load(pdf.assetPath);
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/${pdf.name}');
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+      await OpenFile.open(file.path);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open PDF: $e')),
+      );
+    }
   }
 
   void _downloadPdf(PdfFileModel pdf) {
